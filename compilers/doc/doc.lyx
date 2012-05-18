@@ -1,0 +1,2365 @@
+#LyX 1.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 221
+\textclass article
+\begin_preamble
+\hyphenation{Back-re-fe-ren-ces}
+\end_preamble
+\language finnish
+\inputencoding auto
+\fontscheme pslatex
+\graphics default
+\paperfontsize default
+\spacing single 
+\papersize Default
+\paperpackage a4
+\use_geometry 0
+\use_amsmath 0
+\use_natbib 0
+\use_numerical_citations 0
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\quotes_times 2
+\papercolumns 1
+\papersides 2
+\paperpagestyle fancy
+
+\layout Title
+
+Tavukoodikääntäjä säännöllisille lausekkeille
+\layout Author
+
+Markus Mikkolainen
+\layout Date
+
+24.04.2006
+\layout Abstract
+\pagebreak_bottom 
+Esitellään kääntäjä säännöllisistä lausekkeista Javan tavukoodiksi ja äärellisii
+n automaatteihin perustuvaksi tulkiksi, niihin liittyviä haasteita ja ongelmia,
+ sekä lopuksi jatkokehityssuuntia.
+ Kehitetyt ratkaisut ovat määrätyissä tilanteissa huomattavasti Javan kirjastoto
+teutusta nopeampia.
+ 
+\layout Standard
+
+
+\begin_inset LatexCommand \tableofcontents{}
+
+\end_inset 
+
+
+\layout Section
+\pagebreak_top 
+Johdanto
+\layout Standard
+
+Työssä oli tehtävänä kehittää tulkki säännöllisille lausekkeille ja lisäksi
+ toteuttaa yksi tai useampia valinnaisia tehtäviä, joista oli tarjolla vaihtelev
+a määrä lisäpisteitä.
+ Lisätehtävistä valittiin koodin generointi.
+ Lisäksi laajennettiin säännöllisiä lausekkeita kattamaan 
+\emph on 
++
+\emph default 
+ (aito sulkeuma) ja 
+\emph on 
+?-
+\emph default 
+ operaattorit.
+\layout Standard
+
+Kehityksen apuna käytin Javan kirjastototeutusta säännöllisistä lausekkeista,
+ jota käytin oraakkelina yksikkötestauksessa.
+ Vertailun vuoksi suoritin nopeusvertailuja Javan toteutuksen ja omien toteutuks
+ieni välillä.
+ 
+\layout Standard
+
+Suurimman haasteen tehtävässä antoi säännöllisten lausekkeiden muokkaaminen
+ muotoon, jossa niistä voidaan tuottaa tavukoodia.
+ Tässä haasteen antoi tarve determinisöinnille ja 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymien poistolle.
+ Onneksi ongelma on jo valmiiksi ratkaistu ja löytyy lähdemateriaaleista
+\begin_inset LatexCommand \cite{Orpo94,Grun01}
+
+\end_inset 
+
+.
+ 
+\layout Section
+
+Kääntäjä
+\layout Standard
+
+Ensimmäisenä tehtävänä on muuntaa annettu tekstimuotoinen säännöllinen lauseke
+ jatkokäsittelykelpoiseksi tietorakenteeksi.
+ Ratkaisutavaksi valittiin käsinkoodattu ad-hoc etupää , joka koostuu yksinkerta
+isesta selaajasta ja rekursiivisesti laskeutuvasta (Recursive Descent) jäsentäjä
+stä
+\begin_inset LatexCommand \cite{ScottRecursiveDescent}
+
+\end_inset 
+
+.
+ Selaaja tunnistaa merkkejä yksi kerrallaan ja muodostaa niistä vastaavia
+ alkioita.
+ Suurin osa alkioista on tunnistettavissa sellaisenaan yhdestä merkistä
+ , mutta esimerkiksi escape-merkkien tunnistamiseen vaaditaan ensimmäisen
+ merkin tarkastelun jälkeen toisen merkin syönti.
+ Jäsentäjä koostuu toisiaan kutsuvista metodeista, jotka kuvaavat eri rakenteita.
+ Jäsentäjä toimii yhden alkion ennakolla ja tekee sen mukaan valinnan mihin
+ metodiin se siirtyy.
+ 
+\layout Subsection
+
+Tekstistä lausekkeeksi
+\layout Standard
+
+Saatuaan tekstiä, kääntäjä jäsentelee tekstimuotoisen lausekkeen muistiin
+ väliesitykseksi, joka koostuu puumaisesta alilausekkeiden muodostamasta
+ säännöllisestä lausekkeesta.
+ Suurin osa lausekkeessa esiintyvistä operaatioista (lista, valinta, toisto,yksi
+ttäinen merkki) käännetään sellaisenaan vastaavantyyppiseksi alilausekkeeksi.
+ Toiset lausekkeen operaatiot (?, + ja sulkeet) käännetään ryhmäksi alkeisoperaa
+tioita.
+ Escape-merkkien tapauksessa kenoviiva ja sitä seuraava merkki kääntyvät
+ yhdeksi yhden merkin tunnistavaksi alilausekkeeksi.
+ Sulkeet kääntyvät puuksi lista-alilauseita, 
+\emph on 
+?
+\emph default 
+ kääntyy valinnaksi, jossa toisena osapuolena on tyhjä siirtymä ja 
+\emph on 
++
+\emph default 
+ kääntyy listaksi, jonka osina ovat yksi 
+\emph on 
++
+\emph default 
+:n toistama operaatio ja sulkeuma (*) samasta operaatiosta.
+ Esimerkiksi 
+\emph on 
+a+
+\emph default 
+ kääntyy listaksi, jonka alkioina ovat 
+\emph on 
+a
+\emph default 
+ ja 
+\emph on 
+a*
+\emph default 
+.
+ 
+\layout Standard
+
+Tällä väliesityksellä voidaan toteuttaa helposti ensimmäinen tulkki säännöllisel
+le lausekkeelle, suorittamalla rinnakkain kaikkia lausekkeen mahdollistamia
+ täsmäystiloja, pinoa apuna käyttäen.
+ Tämä suoritustapa mahdollistaa nopean alun alhaisesta kääntökustannuksesta
+ johtuen , mutta kostautuu monimutkaisemmilla lausekkeilla, suurilla toistomääri
+llä ja suurella tekstiaineistolla.
+ 
+\layout Subsection
+
+Lausekeesta automaatiksi
+\layout Standard
+
+Säännölliset lausekkeet ovat tunnetusti yhteneviä epädeterminististen (Nondeterm
+inistic Finite Automaton,NFA) ja determinististen automaattien (Deterministic
+ Finite Automaton,DFA) kanssa 
+\begin_inset LatexCommand \cite{Orpo94,Grun01}
+
+\end_inset 
+
+ .
+ Säännölliset lausekkeet voidaan muuntaa yksinkertaisia perussääntöjä totellen
+ rajallisiksi automaateiksi (Finite Automaton , FA).
+ Suurimmassa osassa tapauksia konversiosta seuraa deterministinen, 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymätön automaatti.
+ Näiden automaattien muuntaminen tavukoodiksi on suoraviivaista.
+ 
+\layout Standard
+
+Suuremman haasteen tuottavat lauseet, joissa esiintyy yhdistelmiä toistosta
+ ja valinnasta tai valintoja joiden toinen osapuoli on 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymä.
+ Tällaisista lauseista muodostuu välttämättä joko 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymäisiä automaatteja tai epädeterministisiä automaatteja tai näiden
+ yhdistelmiä.
+ Epädeterminististen tai 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymäisten automaattien suorittaminen vaatii useamman automaatin samanaikais
+ta suorittamista rinnakkain 
+\begin_inset LatexCommand \cite{Orpo94}
+
+\end_inset 
+
+.
+ Automaattien suorittaminen rinnakkain vaatii toivottua monimutkaisempia
+ pinorakenteita ja tekee automaattia vastaavan tavukoodin tuottamisen monimutkai
+seksi , joten epädeterministiset automaatit on determinisöitävä ennen tavukoodin
+ tuottamista.
+ 
+\layout Standard
+
+Automaatin esitysmuotona kääntäjä käyttää luokkaa, jossa jokaista tilaa
+ kuvaa nimi ja tieto siitä onko se lopputila.
+ Siirtymiä kuvataan kolmikolla lähtötila, merkki ja lopputila.
+ Epsilon-siirtymät kuvataan parilla lähtötila,lopputila.
+ Lisäksi tallennetaan automaatin alkutilan nimi.
+ 
+\layout Subsection
+
+Automaatista deterministiseksi automaatiksi
+\layout Standard
+
+Epädeterministisen automaatin muuntaminen deterministiseksi toimii kaksivaiheise
+sti.
+ Ensimmäisessä vaiheessa poistetaan 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymät tekemällä oikopolkuja 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymien tilalle.
+ Toisessa vaiheessa automaatti determinisöidään rakentamalla vastaava automaatti
+, joka simuloi epädeterministisen automaatin kaikki rinnakkaiset siirtymät
+ yhdellä automaatilla.
+ Hyvä esimerkki näistä molemmista operaatioista löytyy lähteestä 
+\begin_inset LatexCommand \cite{Grun01}
+
+\end_inset 
+
+.
+ 
+\layout Standard
+
+Poistettaessa 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymiä, jokainen 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymä korvataan yhdellä tai useammalla oikopolulla.
+ Aluksi korvataan peräkkäiset 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymät yhdellä 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymällä ensimmäisen siirtymän alkutilasta jälkimmäisen lopputilaan.
+ On varottava tekemästä turhia 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymäsilmukoita.
+ Jos 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymän sisältävään tilaan on siirtymä tilasta q
+\begin_inset Formula $_{\textrm{0}}$
+\end_inset 
+
+ tilaan q
+\begin_inset Formula $_{\textrm{1}}$
+\end_inset 
+
+ syötteellä 
+\emph on 
+a
+\emph default 
+ , rakennetaan oikopolku tilasta q
+\begin_inset Formula $_{\textrm{0}}$
+\end_inset 
+
+ 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymän kohdetilaan syötteellä 
+\emph on 
+a
+\emph default 
+.
+ Vastaavasti jos 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymän kohdetilasta on siirtymä tilaan q
+\begin_inset Formula $_{\textrm{0}}$
+\end_inset 
+
+ syötteellä 
+\emph on 
+a
+\emph default 
+ , rakennetaan oikopolku 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymän lähtötilasta tilaan q
+\begin_inset Formula $_{\textrm{0}}$
+\end_inset 
+
+syötteellä 
+\emph on 
+a
+\emph default 
+.
+ Lopuksi jokainen tila, josta voidaan tavoittaa lopputila 
+\begin_inset Formula $\epsilon$
+\end_inset 
+
+-siirtymien kautta, merkitään lopputilaksi.
+ 
+\layout Standard
+
+Automaattia determinisöidessä simuloidaan rinnakkaisten automaattien suoritusta.
+ Aluksi valitaan alkutila , josta lähdetään etsimään siirtymiä eteenpäin
+ kokeilemalla syöteaakkoston merkkejä yksi kerrallaan.
+ Alkutilasta kokeillaan mitä kaikkia tiloja voidaan tavoittaa merkillä 
+\emph on 
+m
+\emph default 
+.
+ Jos tavoitettavia tiloja on 0 , ei luoda siirtymää.
+ Jos tavoitettavia tiloja on yksi tai enemmän , luodaan siirtymä tilaan,
+ joka on nimetty tavoitettavien tilojen summaksi.
+ Jos merkillä 
+\emph on 
+m 
+\emph default 
+tavoitetaan tilat q
+\begin_inset Formula $_{\textrm{0}}$
+\end_inset 
+
+ja q
+\begin_inset Formula $_{\textrm{1}}$
+\end_inset 
+
+, nimetään uusi tila q
+\begin_inset Formula $_{\textrm{0}}$
+\end_inset 
+
+q
+\begin_inset Formula $_{\textrm{1}}$
+\end_inset 
+
+ ja luodaan siihen siirtymä merkillä 
+\emph on 
+m
+\emph default 
+.
+ Jos tilaa ei ole olemassa, se luodaan.
+ Tätä jatketaan jokaiselle tilalle ja merkille, kunnes uusia siirtymiä tai
+ tiloja ei enää synny.
+ 
+\layout Standard
+
+Tätä väliesitystä voidaan käyttää tehokkaaseen tulkkiin , jossa jokainen
+ merkki tekee yhden siirtymän.
+ 
+\layout Subsection
+
+Deterministisestä automaatista tavukoodiksi
+\layout Standard
+
+Deterministisen automaatin muuntaminen tavukoodiksi on suoraviivaista tavukoodi-
+assemblerin avulla.
+ Tässä työssä assemblerina käytettiin Jasminia 
+\begin_inset LatexCommand \cite{Meye04}
+
+\end_inset 
+
+.
+ Kääntäjä antaa jokaiselle tilalle tilan nimeä vastaavan nimiön (label).
+ Kopioituaan assembler-esitykseen vakiomuotoisen alun, kääntäjä tuottaa
+ hypyn vakionimiseen alkunimiöön.
+ Alkunimiö on aina saman niminen ja vastaa automaatin alkutilaa.
+ Käännösen lopuksi kääntäjä kopioi vakiomuotoisen lopun , jossa on virhettä
+ , hyväksymistä ja hylkäämistä vastaavat nimiöt , sekä niitä vastaavat toimenpit
+eet.
+ 
+\layout Standard
+
+Varsinaisessa käännösvaiheessa kääntäjä tuottaa jokaista tilaa kohti vastaavan
+ nimiön, tarkistuksen merkkien loppumisesta,merkkilaskurin korotuksen ,
+ yhden tai useampia hyppyjä eri tiloihin riippuen seuraavasta merkistä ja
+ lopuksi hylkäävään tilaan siirtymisen, jos hyppyä ei suoritettu.
+ 
+\layout Standard
+
+Lopuksi kääntäjä syöttää tuotetun assemblerin jasminille, lataa sen anonyyminä
+ luokkana ja luo siitä yhden ilmentymän joka palautetaan kysyjälle.
+ 
+\layout Section
+
+Tulokset
+\layout Standard
+
+Kääntäjän varsinainen totetus on MatcherFactory-luokka, joka luo parametrina
+ annetulle säännölliselle lausekkeelle vastaavan Matcher-rajapinnan toteuttavan
+ luokan.
+ Luokka on toisesta parametrista riippuen toteutettu joko tulkkina tai käännetty
+nä.
+ Jos lauseen kääntämisessä esiintyy ongelmia, MatcherFactory heittää toisen
+ kahdesta poikkauksesta.
+ 
+\layout Subsection
+
+Välimuodon tulkkaaminen
+\layout Standard
+
+Yksinkertaisin säännöllisen lausekkeen tulkki on puumaiseksi välimuodoksi
+ käännetyn lausekkeen tulkkaaminen simuloimalla montaa rinnakkaista tunnistusta
+ pinon avulla.
+ Tunnistusta jatketaan kunnes koko lause on tunnistettu tai kaikki polut
+ on hylätty.
+ Tämä on suoritustavoista hitain jos lasketaan pelkkä tekstin tunnistusnopeus.
+ Javan kirjastototeutus tuntuu olevan toteutettu tällä tekniikalla, tosin
+ hyvin tehokkaasti.
+ 
+\layout Subsection
+
+Deterministisen automaatin tulkkaaminen
+\layout Standard
+
+Automaatin esitysmuodosta johtuen tulkki ei ole niin nopea kuin se voisi
+ olla.
+ Parhaimmillaan esitysmuotona olisi kaksi taulukkoa.
+ Toisessa taulukossa kerrottaisiin onko tila lopputila vai ei, ja toisessa
+ jokaiselle tunnistettavalle merkille vastaava tulostila.
+ Merkkien määrästä johtuen (16
+\begin_inset Formula $^{\textrm{2}}$
+\end_inset 
+
+) jouduttaisiin jokaiselle automaatissa esiintyvälle merkille generoimaan
+ numerotunnus taulukon indeksoinnin helpottamiseksi.
+ Nykyinen esitysmuoto koostuu Javan HashMapeista ja ArrayListeistä , joista
+ haetaan laillisia siirtymiä.
+ 
+\layout Standard
+
+Koska automaatti on tässä vaiheessa jo deterministinen, on laillisia siirtymiä
+ aina 1 tai 0 (jolloin hylätään).
+ Tästä johtuen automaatin tulkkaaminen voi olla jopa erittäin nopeaa verrattuna
+ Javan kirjastototeutukseen , joka ilmeisesti pohjautuu säännöllisten lausekkeid
+en tulkkaamiseen.
+ Erityisesti suurta epädeterminismiä omaavissa lausekkeissa ero voi olla
+ suuri.
+ 
+\layout Subsection
+
+Käännetty koodi
+\layout Standard
+
+Kääntäjän tavukoodia tuottavaa takapäätä kehittäessä käytettiin apuna Jonathan
+ Meyerin Jasmin-tavukoodiassembleria
+\begin_inset LatexCommand \cite{Meye04}
+
+\end_inset 
+
+ ja Meyerin koostamaa listaa Javan tavukoodeista ja niitä vastaavista assembler-
+käskyistä
+\begin_inset LatexCommand \cite{Down04}
+
+\end_inset 
+
+.
+ Käännetty koodi on aika spagettimaista ja siinä on vielä parannettavaa
+ varsinkin ehtolauseissa, jotka ovat nykyään toteutettu peräkkäisinä vertailuina.
+ Javan tableswitch- tai lookupswitch-komentoon perustuva ratkaisi voisi
+ olla nopeampi, varsinkin suuremmilla vertailumäärillä.
+ Koska tavukoodiesitys kääntyy hyvin nopeasti ajavan tietokoneen omalle
+ käskykannalle , se on huomattavasti tulkkeja nopeampi.
+\layout Subsection
+
+Laajennokset kieleen
+\layout Standard
+
+Laajennoksista toteutettiin kaksi.
+ ?-operaattori toteutettiin tuottamalla lauseke 
+\emph on 
+(|a) 
+\emph default 
+jossa 
+\emph on 
+a
+\emph default 
+ on ?-operaattorin kohdelauseke.
+ Aito sulkeuma eli +-operaattori toteutettiin tuottamalla lauseke 
+\emph on 
+aa* 
+\emph default 
+, jossa a on +-operaattorin kohdelauseke.
+ 
+\layout Subsection
+
+Minimointi
+\layout Standard
+
+Pikaisella kokeilulla näyttäisi siltä, että säännöllisistä lausekkeista
+ tuotetut automaatit ovat jo senverran minimaalisia, että niiden minimointi
+ ei tuota sanottavaa hyötyä.
+ Ainoa näkyvä hyöty oli epädeterministisimmässä testitapauksessa, ja siinäkin
+ minimaalinen.
+ Säännöllisen lausekkeen muunnosaika automaatiksi sen sijaan tuplaantuu
+ ja tämä vaikuttaa tulkkitoteutukseen erittäin negatiivisesti.
+\layout Subsection
+
+Testaaminen
+\layout Standard
+
+Kääntäjän testaamiseksi automaatisesti, tehtiin testipenkki, jossa voidaan
+ vertailla erilaisten lausekkeiden käyttäytymistä Javan kirjastototeutuksen
+ ja kääntäjän tuottaman välillä.
+ Testiaineistoon valittiin kattava valikoima lausekkeita yksinkertaisesta
+ monimutkaiseen.
+ 
+\layout Subsection
+
+Mittauksia
+\layout Standard
+
+Kääntävän toteutuksen elinkelpoisuutta kokeiltaessa mitattiin suoritusaikaeroja
+ Javan kirjastototeutuksen, lausekkeita suoraan tulkkaavan , automaatteja
+ tulkkaavan ja tavukoodiksi käännetyn version välillä.
+ Mittauksissa käytettiin menetelmiä ja vipuja
+\begin_inset Foot
+collapsed false
+
+\layout Standard
+
+Käytössä oli sekä 100-10000 toiston 
+\begin_inset Quotes eld
+\end_inset 
+
+esilämmitys
+\begin_inset Quotes erd
+\end_inset 
+
+ , että -XX:CompileThreshold-vipu.
+\end_inset 
+
+, jotka takasivat suoritusajan mittauksen JIT-kääntäjän kääntämästä koodista.
+ Havaittujen suurien ajoaikaerojen takia käytettiin sekä 100 että 10000
+ toiston mittauksia.
+ Mittauksissa mitattiin sekä keskimääräinen käännösaika toistuvasti suoritettava
+an muotoon, että keskimääräinen toistuvasti suoritettavan muodon ajoaika
+ erilaisille testimateriaaleille.
+ 
+\layout Standard
+
+Suoritusajat ovat millisekunteja nimetylle määrälle toistoja esilämmityksen
+ jälkeen.
+ 
+\layout Subsubsection
+
+100 toiston mittaus
+\layout Standard
+
+Sadalla toistolla suuri osa testeistä palauttaa ajaksi 0 millisekuntia.
+ Tämä testi on kumminkin tehtävä, koska Javan kirjastototeutus selviää niin
+ huonosti monimutkaisista lauseista.
+ Sadalla toistolla tulee jo näkyviin eroavuudet sekä suoritus että käännösajoiss
+a.
+ Javan toteutus kääntää kaikki lauseet erittäin nopeasti , siinä missä determini
+stiseen automaattiin perustuva tulkki valmistuu välillä yhtä nopeasti, välillä
+ hieman nopeammin ja osan aikaa huomattavasti hitaammin.
+ Kaikissa tapauksissa tavukooditoteutuksen kääntäminen kestää kymmeniä ellei
+ tuhansia kertoja pidempään, mutta pysyy kumminkin kymmenien millisekuntien
+ luokassa käännöstä kohti.
+ Hallitsevana tekijänä tavukooditoteutuksessa on assemblerin kääntämiseen
+ ja luokan lataamiseen kuluva aika.
+ 
+\layout Standard
+
+Lauseen tunnistamiseen kuluva aika on deterministiseen automaattiin perustuvalla
+ toteutuksella yleensä vähintään 10 kertaa nopeampi kuin Javan toteutuksella.
+ Joissain tapauksissa nopeusero on jopa satatuhatkertainen.
+ Käännetyllä toteutuksella tunnistamisaika on joka kerralla niin pieni ettei
+ mittaus ole luotettava, se jää yleensä alle yhden millisekunnin sadalle
+ toistolle.
+ 
+\begin_inset Float table
+wide false
+collapsed false
+
+\layout Standard
+
+
+\begin_inset  Tabular
+<lyxtabular version="3" rows="4" columns="9">
+<features>
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+toteutus
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+K1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+K2
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2a
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2b
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2c
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+K3
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T3
+\end_inset 
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+Java
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.25
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.23
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.06
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.24
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.24
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.02
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+<0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+4380
+\end_inset 
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tavukoodi
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+3.2
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+<0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+4.5
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+<0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+<0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+<0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+19.12
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+<0.01
+\end_inset 
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tulkki
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.24
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.02
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+<0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+<0.01
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1.97
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.03
+\end_inset 
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset 
+
+
+\layout Caption
+
+
+\begin_inset LatexCommand \label{cap:Käännös-ja-ajoajat}
+
+\end_inset 
+
+Käännös ja ajoajat keskimäärin (ms)
+\end_inset 
+
+
+\layout Standard
+
+Taulukosta 
+\begin_inset LatexCommand \ref{cap:Käännös-ja-ajoajat}
+
+\end_inset 
+
+ nähdään 100 toiston ajojen nopeuserot.
+ Tulkkaava toteutus on Javan toteutukseen verrattuna erittäin kilpailukykyinen
+ käännösajoissa ja aina nopeampi ajoajoissa.
+ Tavukooditoteutus on huomattavasti jäljessä käännösajoissa mutta ottaa
+ sen takaisin huomattavina nopeusetuina tunnistusajoissa.
+ 
+\layout Subsubsection
+
+10000 toiston mittaus
+\layout Standard
+
+Kymmenellätuhannella toistolla kaikki testit alkavat näyttää jo aitoja tuloksia
+ , mutta viimeinen testi Javan toteutuksella veisi liian pitkään ajaa.
+ Vielä kymmenellätuhannellakin toistolla nopeammat testit näyttävät heiluvan
+ jopa 25 prosenttia.
+ 
+\layout Standard
+
+
+\begin_inset Float table
+wide false
+collapsed false
+
+\layout Standard
+
+
+\begin_inset  Tabular
+<lyxtabular version="3" rows="4" columns="9">
+<features>
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+toteutus
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+K1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+K2
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2a
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2b
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2c
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+K3
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T3
+\end_inset 
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+Java
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0062
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0241
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0045
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0424
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0837
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0254
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0108
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+~4400?
+\end_inset 
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tavukoodi
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+3.431
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0022
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+3.8662
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0001
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0001
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0001
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+18.6423
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0031
+\end_inset 
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tulkki
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0705
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0279
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0178
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0030
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0029
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0014
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1.3822
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.0351
+\end_inset 
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset 
+
+
+\layout Caption
+
+
+\begin_inset LatexCommand \label{cap:Käännös-ja-ajoajat2}
+
+\end_inset 
+
+Käännös ja ajoajat keskimäärin 10000 toistolle (ms)
+\end_inset 
+
+
+\layout Standard
+
+Taulukosta 
+\begin_inset LatexCommand \ref{cap:Käännös-ja-ajoajat2}
+
+\end_inset 
+
+ nähdään Javan toteutuksen heikkoudet monimutkaisilla lauseilla.
+ 
+\layout Standard
+
+
+\begin_inset Float table
+wide false
+collapsed false
+
+\layout Standard
+
+
+\begin_inset  Tabular
+<lyxtabular version="3" rows="3" columns="6">
+<features>
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+toteutus
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2a
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2b
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2c
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T3
+\end_inset 
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tavukoodi
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+157
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+92
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+47
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+153
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1
+\end_inset 
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tulkki
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+-
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1
+\end_inset 
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset 
+
+
+\layout Caption
+
+
+\begin_inset LatexCommand \label{cap:Toistomäärien-nollakohdat}
+
+\end_inset 
+
+Toistomäärien nollakohdat 
+\end_inset 
+
+
+\layout Standard
+
+Taulukosta 
+\begin_inset LatexCommand \ref{cap:Toistomäärien-nollakohdat}
+
+\end_inset 
+
+ nähdään toistomäärät, joiden jälkeen kyseinen toteutus on kyseisessä testitapau
+ksessa nopeampi kuin Javan kirjastototeutus.
+ Testissä 1 tulkki on hieman hitaampi kuin Javan kirjastototeutus , mutta
+ silti kilpailukykyinen.
+ Muissa testeissä se on heti alusta alkaen nopeampi kuin Javan totetutus.
+ Tavukooditoteutus vaatii viidestäkymmenestä kahteensataan toistoa ennenkuin
+ se alkaa kilpailemaan Javan toteutuksen kanssa, mutta on suuremmilla toistomäär
+illä huomattavasti nopeampi.
+ 
+\layout Standard
+
+
+\begin_inset Float table
+wide false
+collapsed false
+
+\layout Standard
+
+
+\begin_inset  Tabular
+<lyxtabular version="3" rows="3" columns="6">
+<features>
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+toteutus
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2a
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2b
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2c
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T3
+\end_inset 
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tavukoodi
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+10.95
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+424
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+837
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+254
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+
+\begin_inset Formula $1.41*10^{6}$
+\end_inset 
+
+
+\end_inset 
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tulkki
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+0.86
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+14.13
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+28.86
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+18.14
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+
+\begin_inset Formula $1.25*10^{5}$
+\end_inset 
+
+
+\end_inset 
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset 
+
+
+\layout Caption
+
+
+\begin_inset LatexCommand \label{cap:Toteutusten-nopeus-suhteessa}
+
+\end_inset 
+
+Toteutusten nopeus suhteessa Javan toteutukseen
+\end_inset 
+
+
+\layout Standard
+
+Taulukosta 
+\begin_inset LatexCommand \ref{cap:Toteutusten-nopeus-suhteessa}
+
+\end_inset 
+
+ nähdään toteutusten suhteellinen nopeusero eri testeissä suhteessa Javan
+ toteutukseen.
+ Pääosin tulkattu deterministinen automaatti hallitsee olemalla liki joka
+ suhteessa Javan toteutusta nopeampi ja lyömällä tavukooditoteutuksen pienillä
+ toistomäärillä.
+ 
+\layout Standard
+
+
+\begin_inset Float table
+wide false
+collapsed false
+
+\layout Standard
+
+
+\begin_inset  Tabular
+<lyxtabular version="3" rows="2" columns="6">
+<features>
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+toteutus
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T1
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2a
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2b
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T2c
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+T3
+\end_inset 
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+tavukoodi
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+131
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1328
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+1375
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+2961
+\end_inset 
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\layout Standard
+
+540
+\end_inset 
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset 
+
+
+\layout Caption
+
+
+\begin_inset LatexCommand \label{cap:Toistomäärien-nollakohdat-tulkki/tavukoodi}
+
+\end_inset 
+
+Toistomäärien nollakohdat tulkki/tavukoodi
+\end_inset 
+
+
+\layout Standard
+
+Taulukosta 
+\begin_inset LatexCommand \ref{cap:Toistomäärien-nollakohdat-tulkki/tavukoodi}
+
+\end_inset 
+
+ nähdään tavukooditoteutuksen nollakohta verrattuna tulkkiin.
+ 
+\layout Section
+
+Sovelluskohteista
+\layout Standard
+
+Deterministiseen automaattiin perustuvan tulkin suhteellisesta keveydestä
+ johtuen sitä kannattaa käyttää aina Javan kirjastototeutuksen sijaan, jos
+ mahdollista.
+ Tavukoodiksi kääntävä toteutus on edullinen, jos sitä käytetään yhteydessä,
+ jossa kääntämisen kustannus ei haittaa tai toistoja on todella paljon.
+ Tällaisia ovat esimerkiksi tilanteet joissa säännöllinen lauseke käännetään
+ osana lähdekoodia tavukoodiksi , tai esimerkiksi palvelimissa joissa tehdään
+ jatkuvaa tekstin korvaamista.
+ Hyvä sovelluskohde tavukoodiksi käännetyille säännöllisille lausekkeille
+ olisi esimerkiksi wikeissä.
+ 
+\layout Standard
+
+Yleisinä käyttökohteina grep ja sed-tyyliset työkalut ovat perinteisesti
+ sellaisia joissa joudutaan tekemään isommalle tiedostolle tuhansia vertailuja
+ haettaessa kaikkia tunnistettavia tai korvattavia esiintymiä.
+ Erityisesti wikeissä joissa tehdään monta peräkkäistä korvausajoa lähdetiedosto
+lle , voi korvausten määrä olla huomattava.
+ Suuri osa wikeistä toteutetaan kielillä, joissa on tuki säännöllisille
+ lausekkeille ja tekstin korvaamiselle säännöllisten lausekkeiden perusteella.
+ Olisi mielenkiintoista tehdä nopeusvertailu, jossa olisi mukana perl ja
+ python.
+ 
+\layout Standard
+
+Jotta näillä toteutuksilla voitaisiin korvata Javan toteutus , tarvitaan
+ tuki laajemmalle käskykannalle ja takaisinviittauksille(backreferences).
+ Vähimmäisvaatimuksena käytettävälle toteutukselle voidaan pitää tukea .-operaatt
+orille ja merkkiväleille ([a-c]).
+\layout Section
+
+Jatkokehitys
+\layout Standard
+
+Näyttäisi mahdolliselta kehittää käännettyyn versioon tuki takaisinviittauksille.
+ Toteutustapana voisi olla tuki erikoisille tiloille, jotka tallentavat
+ jokaisella alkavalla sulkeella paikan tekstissä sulkeen järjestysnumeroa
+ vastaavaan rekisteriin.
+ Sulkevalla sulkeella talletettaisiin paikka järjestysnumero+9-rekisteriin.
+ Käsiteltäessä takaisinviittausta 0-9 siirrytään erikoiseen tilaan, joka
+ noutaa vastaavat tekstikoordinaatit ja vertaa vastaavan merkkijonon.
+ Jos merkkijono täsmää voidaan siirtyä seuraavaan tilaan, jos merkkijono
+ ei täsmää voidaan hylätä.
+ Tämä vaatii verrattavan aineiston satunnaishakukykyä.
+ Toinen vaihtoehto on kopioida tekstijonot talteen esimerkiksi taulukkoon
+ ja verrata niitä sieltä , jolloin ei tarvita satunnaishakukykyä.
+ 
+\layout Standard
+
+Eräänä mahdollisuutena takaisinviittausten toteuttamiseen voisi tutkia merkittyj
+ä takaisinviittauksia (tagged backreferences) ja vastaavia merkittyjä epädetermi
+nistisiä automaatteja (tagged NFA's)
+\begin_inset LatexCommand \cite{Laur00,Laur01}
+
+\end_inset 
+
+.
+ Ne näyttävät lupaavalta tavalta toteuttaa takaisinviittaustiedon siirtäminen
+ säännöllisistä lausekkeista tuotettuun tavukoodiin.
+ 
+\layout Standard
+
+Hyödyllinen laajennos nykyiseen toteutukseen olisi palauttaa pisimmän löydetyn
+ vastaavuuden loppuindeksi täsmäsi/ei täsmännyt-totuusarvon sijaan.
+ Tämä mahdollistaisi helpon ja tehokkaan toteutuksen sedin tapaisille työkaluill
+e , jotka korvaavat tekstiä säännöllisten lausekkeiden perusteella.
+ 
+\layout Standard
+
+Osa laajennoksista kieleen on mahdollista toteuttaa muuttamalla kääntäjän
+ etupäätä generoimaan laajennoksia vastaavaa tilakonetta jo aiemmin tuetuin
+ rakentein.
+ Esimerkiksi merkkialue a-c voidaan toteuttaa listana a|b|c.
+ Counted instances voidaan toteuttaa vastaavana listana esim.
+ a{3-6} tuottaa aaa(|a|aa|aaa).
+ Nimetyt makrot voidaan toteuttaa kääntäjän etupäässä makrolaajennoksella
+ laajentamalla tunnistetut makrot vastaavaksi lausekkeeksi.
+ 
+\layout Section
+
+Viitteistä
+\layout Standard
+\pagebreak_bottom 
+Päälähteenä käytin Laskennan Teoria-luentomonistetta
+\begin_inset LatexCommand \cite{Orpo94}
+
+\end_inset 
+
+.
+ Sen lisäksi netistä löytyi useita hyödyllisiä lähteitä.
+ Näistä hyödyllisimmiksi osoittautuivat jAutomata - sovelma
+\begin_inset LatexCommand \cite{Gmei02}
+
+\end_inset 
+
+ ja columbian yliopiston luentomoniste säännöllisistä lausekkeista
+\begin_inset LatexCommand \cite{Grun01}
+
+\end_inset 
+
+.
+ 
+\layout Standard
+
+
+\begin_inset LatexCommand \BibTeX[bibtotoc,tktl]{/home/itm/tlasource/oma--mainline--0.1/harkat/kaantajat/2/doc/bibtex}
+
+\end_inset 
+
+
+\layout Section
+\pagebreak_top \start_of_appendix 
+Mittauslokeja 
+\layout Subsection
+
+Mittausaineisto
+\layout Standard
+
+Ensimmäisenä mitattava säännöllinen lauseke , sen alla testiaineisto.
+\layout Itemize
+
+a(b|c)*c 
+\begin_deeper 
+\layout Itemize
+
+"abbbbccbbbccbcbcbcbcbcbcbcbcbcbcbcbcbcbcb
+\newline 
+cbcbcbcbcbcbccbcbcbcbcbccbbccc"
+\end_deeper 
+\layout Itemize
+
+a(a(b|c)*)*ab 
+\begin_deeper 
+\layout Itemize
+
+"aabababababababababababababababababababa
+\newline 
+babacacacacacacacacacacacacacacacacacacacacacacac" 
+\layout Itemize
+
+"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+\newline 
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+\newline 
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+\newline 
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+\layout Itemize
+
+"aacacacacacacacacacacababababababababaaaaa
+\newline 
+aaaaaaaaaaaaaaaaaaaaaacacacacacab"
+\end_deeper 
+\layout Itemize
+
+((a|b)*(a|b))*(a|b)abababababababababab
+\begin_deeper 
+\layout Itemize
+
+"abababababababababbabababaababababaabababa
+\newline 
+babababababababababababaabababababababababababab"
+\end_deeper 
+\layout Subsection
+
+100 toistoa
+\layout Standard
+
+Allaolevassa on käytetty esilämmitystä ja -XXCompileThreshold=10 - vipua.
+ Tulkkaavana toteutuksena on deterministiseen automaattiin perustuva tulkki.
+ 
+\layout Quotation
+
+[itm@itm source]$ java -ea -XX:CompileThreshold=10 -cp .:lib/jasmin.jar Benchmark
+ 
+\layout Quotation
+
+preheating compilers 
+\layout Quotation
+
+done 
+\layout Quotation
+
+Compiling sun regex a(b|c)*c took 25ms 
+\layout Quotation
+
+Compiling uncompiled regex a(b|c)*c took 24ms 
+\layout Quotation
+
+Compiling compiled regex a(b|c)*c took 320ms 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching sun regex a(b|c)*c took 23ms 
+\layout Quotation
+
+Matching uncompiled regex a(b|c)*c took 2ms 
+\layout Quotation
+
+Matching compiled regex a(b|c)*c took 0ms 
+\layout Quotation
+
+Compiling sun regex a(a(b|c)*)*ab took 6ms 
+\layout Quotation
+
+Compiling uncompiled regex a(a(b|c)*)*ab took 1ms 
+\layout Quotation
+
+Compiling compiled regex a(a(b|c)*)*ab took 450ms 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 24ms 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 1ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 0ms 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 24ms 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 0ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 0ms 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 2ms 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 0ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 0ms 
+\layout Quotation
+
+Compiling sun regex ((a|b)*(a|b))*(a|b)abababababababababab took 0ms 
+\layout Quotation
+
+Compiling uncompiled regex ((a|b)*(a|b))*(a|b)abababababababababab took
+ 197ms 
+\layout Quotation
+
+Compiling compiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 1912ms
+ 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching sun regex ((a|b)*(a|b))*(a|b)abababababababababab took 438026ms
+ 
+\layout Quotation
+
+Matching uncompiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 3ms
+ 
+\layout Quotation
+
+Matching compiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 0ms
+ 
+\layout Subsection
+
+10000 toistoa
+\layout Standard
+
+10000 toistoa -XX:CompileThreshold=10 asetuksella.Tulkkina automaatteihin
+ perustuva toteutus.
+ Logista puuttuu viimeisen lausekkeen ajo Javan toteutuksella koska sen
+ ajaminen olisi vienyt tunteja.
+\layout Quotation
+
+[itm@itm source]$ java -ea -XX:CompileThreshold=10 -cp .:lib/jasmin.jar Benchmark
+ 
+\layout Quotation
+
+preheating compilers 
+\layout Quotation
+
+done 
+\layout Quotation
+
+Compiling sun regex a(b|c)*c took 62ms 
+\layout Quotation
+
+Compiling uncompiled regex a(b|c)*c took 705ms 
+\layout Quotation
+
+Compiling compiled regex a(b|c)*c took 34310ms 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching uncompiled regex a(b|c)*c took 279ms 
+\layout Quotation
+
+Matching compiled regex a(b|c)*c took 22ms 
+\layout Quotation
+
+Matching sun regex a(b|c)*c took 241ms 
+\layout Quotation
+
+Compiling sun regex a(a(b|c)*)*ab took 45ms 
+\layout Quotation
+
+Compiling uncompiled regex a(a(b|c)*)*ab took 178ms 
+\layout Quotation
+
+Compiling compiled regex a(a(b|c)*)*ab took 38662ms 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 30ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 1ms 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 424ms 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 29ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 1ms 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 837ms 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 14ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 1ms 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 254ms 
+\layout Quotation
+
+Compiling sun regex ((a|b)*(a|b))*(a|b)abababababababababab took 108ms 
+\layout Quotation
+
+Compiling uncompiled regex ((a|b)*(a|b))*(a|b)abababababababababab took
+ 13822ms 
+\layout Quotation
+
+Compiling compiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 186423ms
+ 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching uncompiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 351ms
+ 
+\layout Quotation
+
+Matching compiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 31ms
+ 
+\layout Standard
+
+10000 toistoa minimoinnilla (ks.
+ MatcherFactory.java)
+\layout Quotation
+
+[itm@itm source]$ java -ea -XX:CompileThreshold=10 -cp .:lib/jasmin.jar Benchmark
+ 
+\layout Quotation
+
+preheating compilers 
+\layout Quotation
+
+done 
+\layout Quotation
+
+Compiling sun regex a(b|c)*c took 57ms 
+\layout Quotation
+
+Compiling uncompiled regex a(b|c)*c took 1589ms 
+\layout Quotation
+
+Compiling compiled regex a(b|c)*c took 32733ms 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching uncompiled regex a(b|c)*c took 230ms 
+\layout Quotation
+
+Matching compiled regex a(b|c)*c took 25ms 
+\layout Quotation
+
+Matching sun regex a(b|c)*c took 160ms 
+\layout Quotation
+
+Compiling sun regex a(a(b|c)*)*ab took 49ms 
+\layout Quotation
+
+Compiling uncompiled regex a(a(b|c)*)*ab took 2466ms 
+\layout Quotation
+
+Compiling compiled regex a(a(b|c)*)*ab took 40695ms 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 37ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 1ms 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 488ms 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 25ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 1ms 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 770ms 
+\layout Quotation
+
+Matching uncompiled regex a(a(b|c)*)*ab took 16ms 
+\layout Quotation
+
+Matching compiled regex a(a(b|c)*)*ab took 0ms 
+\layout Quotation
+
+Matching sun regex a(a(b|c)*)*ab took 265ms 
+\layout Quotation
+
+Compiling sun regex ((a|b)*(a|b))*(a|b)abababababababababab took 97ms 
+\layout Quotation
+
+Compiling uncompiled regex ((a|b)*(a|b))*(a|b)abababababababababab took
+ 72922ms 
+\layout Quotation
+
+Compiling compiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 225286ms
+ 
+\layout Quotation
+
+preheating 
+\layout Quotation
+
+benchmarking 
+\layout Quotation
+
+Matching uncompiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 274ms
+ 
+\layout Quotation
+
+Matching compiled regex ((a|b)*(a|b))*(a|b)abababababababababab took 34ms
+\layout Quotation
+
+
+\begin_inset Note
+collapsed false
+
+\layout Standard
+
+go through tiki.tex list of checks
+\end_inset 
+
+
+\the_end

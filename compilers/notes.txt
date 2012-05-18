@@ -1,0 +1,172 @@
+/*
+	-1.2x points for alone
+	-5 for basic
+	-5.5 for codegen
+	-input lang extension 1.5
+		=12*1.2=14.4
+		=12.6 for basic+codegen * 1.2
+*/
+/*TODO
+	-NEXT	
+		-muuta rajapinta niin että palauttaa pisimmän matchin offsetin
+		 jossei matchaa , jos matchaa niin se on == off+len, jos ei 
+		 matchaa ollenkaan niin se == off
+		-!!!add "." to commands as "any" ?    
+		-convert character ranges to or's
+		-how to make counted instances
+			-definite number by concatenation
+			-3-9 as 3+(0|1)+{0|2}+{0|3} ? 
+		-FA determinisöinti kestää ilmeisesti
+			-precalculoi FA:n inputsetti?
+		-tutki tapoja tehdä tagged transitioilla backreferencet 
+		
+	DFA:
+		-generoi whiletrueswitchcase DFAsta
+		-use CharSequence
+		-look at minimizing
+		-input stuff extension? 
+		-groovysta katotaan että mimmonen implementaatio on siinä
+		-laajenna niin että
+			-skannaa streamia
+			-osaa kertoa matchit alku/loppu tyyliin streamista 
+			 tjsp
+			-työkalut sedaamiseen s/fjfj/kfj/g
+			-submatchit \1 tyyliin
+				-talleta stackiin aina start ja len
+				-talleta yhteen muuttujaan näiden määrä?
+				-ongelma miten pääsee käsiks n:teen 
+				 stackissa olevaan ? 
+				-
+*/
+/*determinize
+	-function move =
+		-take state and  an input char
+		-return set of states reachable by one transition on this char
+	1.create start state q0 
+	2.perform following for the new DFA state
+		for each possible input symbol:
+			1.apply move to the newly created state and the input symbol
+			2.(apply e-transitions)
+		this set of states will be a new state in DFA
+		-for each node transitions are
+			-for each char , one arrow
+				-arrow points to state (sum of all dest states 
+				 			for all states in the state)				
+	3.each time we generate a new DFA state , apply step 2 to it
+	4. we are complete when 2 doesnt produce new states
+	5. finish states are the ones which contain atleast one finish state
+			
+*/
+/*
+	global variables
+		-pos = offset at start, the position in text
+		-len = text.length(); the length of text
+		-gmatch , global match boolean ? 
+	-shit. 
+		-mul maximum munch check is difficult. 
+		-especially with alternation
+*/
+/*
+	model regexp parsing as:
+	-stack of visited regexps 
+		-push each time going in
+		-pop each time coming out
+		-when saving state, store stack and pos
+		-process the regexp on top of stack
+		-save all state into a state object
+	-insert state for pos=st and first regexp in stack
+	-process states as long as they exist and no match
+	-process one state as long as there is no mismatch
+		-process the topmost regexp
+	-optimize away
+		-list of two similar Star Expressions
+		-alternation of two similar expressions
+		-swap a* a to a,a* in list 
+*/
+/*compiled version
+	-for each list/char generate a matching basic block
+	-make sure everything can be matched in order
+	-for each OR generate an if with the OR's and a 
+	 forloop for the rest of the clause
+	-for each mul
+		-calculate max match of mul
+		-generate a for with max match, munch with length i and 
+		 the rest of the clause in the forloop
+	
+*/
+/*compiled version implementation
+	-make a separate factory from RegExp ir to Matcher
+	-how to implement alternation and repetition? 
+		-need to store state
+			-regexps left
+			-position in string
+		-stacks? 
+	-subprograms to munch chars and sequences of chars?
+	
+	
+	-should we avoid functions by compiling this to one large method?
+		-do gotos inside one function? 
+		-one block for each subexp? 
+		-is it possible to store a return address for goto? 
+	!!!!should be doable without stacks
+		-provided we get the stuff into forward-only mode
+	-encode deterministic stuff as one basic block/function
+		-encode char matching as c==charAt(pos);pos++;
+		-encode or's as two calls to separate functions
+		-encode mul as 0-n calls to separate functions
+			 with different offsets
+		-visit the whole tree and get all different paths through the 
+		 tree
+		 	-alternation doubles paths
+			-mul as a single token in path
+		-generate code for minimum length of string ?
+			-fail immediately if not ok?
+		-generate code for each path
+			-each basicblock as one method? 
+			-each method returns true for match, false for no match
+			-each method called with pos,string,end
+		-mul should measure amount of max matches
+			-generate code to call next method with max munch
+				-if succeed return ok
+				-if fail,dec munch by one and repeat
+				-if munch==-1 , fail
+			
+*/
+
+NFA:
+        q2:
+        EndState
+        q1:
+        Transition
+                input:c
+                to:q1
+        Transition
+                input:b
+                to:q1
+        Transition
+                input:b
+                to:q2
+        start:
+        Transition
+                input:a
+                to:q1
+
+DFA:
+        q1:
+        Transition
+                input:c
+                to:q1
+        Transition
+                input:b
+                to:q2q1
+        start:
+        Transition
+                input:a
+                to:q1
+        q2q1:
+        Transition
+                input:c
+                to:q1
+        Transition
+                input:b
+                to:q2q1
